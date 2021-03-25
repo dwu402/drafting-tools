@@ -131,11 +131,11 @@ FUNCTION {init.config.constants}
   "Available from: " 'urlintro := % prefix before URL
   "http://arxiv.org/abs/" 'eprinturl := % prefix to make URL from eprint ref
   "arXiv:" 'eprintprefix := % text prefix printed before eprint ref
-  "http://dx.doi.org/" 'doiurl := % prefix to make URL from DOI
+  "doi:" 'doiurl := % prefix to make URL from DOI
   doiurl 'doiprefix := % text prefix printed before DOI ref
   #0 'addeprints := % 0=no eprints; 1=include eprints
   #1 'adddoiresolver := % 0=no DOI resolver; 1=include it
-  #0 'hrefform := % 0=no crossrefs; 1=hypertex xrefs; 2=hyperref refs
+  #2 'hrefform := % 0=no crossrefs; 1=hypertex xrefs; 2=hyperref refs
 }
 INTEGERS { 
   bracket.state
@@ -223,7 +223,7 @@ FUNCTION {inbrackets}
     { open.brackets 'bracket.state := }
   if$
 }
-
+%%
 FUNCTION {format.lastchecked}
 { lastchecked empty$
     { "" }
@@ -254,7 +254,7 @@ FUNCTION {output.check}
 FUNCTION {fin.entry}
 { 
   bracket.state close.brackets = % urlbst
-    { "]" * }
+    { "]" * outside.brackets 'bracket.state :=}
     'skip$
   if$
    add.period$
@@ -472,6 +472,7 @@ FUNCTION {remove.dots}
   }
   while$
 }
+%"
 
 INTEGERS {l}
 FUNCTION{string.length}
@@ -1452,9 +1453,14 @@ FUNCTION {make.href.hyperref}
 { 
   "\href {" swap$ * "} {" * swap$ * "}" *
 }
+% make urls specials
+FUNCTION {make.href.url}
+{
+  "\url {" swap$ * "}" *
+}
 FUNCTION {make.href}
 { hrefform #2 =
-    'make.href.hyperref      % hrefform = 2
+    'make.href.url      % hrefform = 2
     { hrefform #1 =
         'make.href.hypertex  % hrefform = 1
         'make.href.null      % hrefform = 0 (or anything else)
@@ -1478,14 +1484,14 @@ FUNCTION {format.url}
 FUNCTION {format.eprint}
 { eprint empty$
     { "" }
-    { eprintprefix eprint * eprinturl eprint * make.href }
+    { eprintprefix eprint * eprinturl eprint * make.href.hyperref }
   if$
 }
 
 FUNCTION {format.doi}
 { doi empty$
     { "" }
-    { "(" doiprefix doi * doiurl doi * make.href * ")" * }
+    { "(" doiurl doi * make.href * ")" * }
   if$
 }
 
@@ -1507,7 +1513,7 @@ FUNCTION {output.url}
 FUNCTION {output.web.refs}
 {
   new.block
-  %output.url
+  output.url
   addeprints eprint empty$ not and
     { format.eprint output.nonnull }
     'skip$
